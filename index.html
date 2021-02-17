@@ -1,12 +1,14 @@
 <html>
 
 <head>
+	<title>Tableaunoir</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 	<link rel="stylesheet" type="text/css" href="style.css" />
 	<script src="js/Delineation.js"></script>
 	<script src="js/Palette.js"></script>
+	<script src="js/UserManager.js"></script>
 	<script src="js/User.js"></script>
-	<script src="js/main.js"></script>
 	<script src="js/magnetManager.js"></script>
 	<script src="js/myMagnets.js"></script>
 	<script src="js/cancelStack.js"></script>
@@ -21,114 +23,138 @@
 	<script src="js/share.js"></script>
 	<script src="js/ShareEvent.js"></script>
 	<script src="js/ErrorMessage.js"></script>
+	<script src="js/Toolbar.js"></script>
+	<script src="js/Layout.js"></script>
+	<script src="js/main.js"></script>
 </head>
 
 <body>
-	<div hidden id=controls>
-		<button id="buttonMenu">Menu</button>
-		<button id="buttonColors">Colors</button>
-		<button id="buttonEraser">Chalk/Eraser</button>
-		<button id="buttonCancel">Cancel</button>
-		<button id="buttonRedo">Redo</button>
-		<button id="buttonLeft">Left</button>
-		<button id="buttonRight">Right</button>
+	<div id=controls>
+		<button id="buttonMenu">☕ Menu</button><span class="keyboardkeyhelp">Esc.</span>
+		<button id="buttonColors" title="Choose your color">🎨 Colors</button><span class="keyboardkeyhelp">c</span>
+		<button id="buttonEraser" title="Switch between erase and draw">⌫ Eraser</button><span
+			class="keyboardkeyhelp">e</span>
+		<button id="buttonText" title="Add some text written with the keyboard">Text</button><span
+			class="keyboardkeyhelp">Enter</span>
+		<button id="buttonDivide" title="Divide the screen vertically in two">| Divide</button><span
+			class="keyboardkeyhelp">d</span>
+		<button id="buttonCancel" title="Cancel the last action">↩ Cancel</button>
+		<button id="buttonRedo" title="Redo the last action">↪ Redo</button>
+		<button id="buttonLeft" title="Go left">← Left</button>
+		<button id="buttonRight" title="Go right">→ Right</button>
+		<button id="buttonCloseControls" title="Hide this toolbar (it can be shown again in the menu)"
+			onclick="controls.hidden = true; welcome.hidden = true;">Hide toolbar</button><span
+			class="keyboardkeyhelp">h</span>
+		<div id="users"></div>
 	</div>
-	<div id="container">
-		<div id="board">
-			<canvas width=2000 height=1200 id="canvas"></canvas>
-			<div id="magnets"></div>
-			<svg id="svg" width=2500 height=1300></svg>
-			<div id="cursors"></div>
-			<div id="palette" class="PaletteHide"></div>
+	<div id="content">
+		<canvas id="canvasBackground" width=2000 height=1200></canvas>
+		<div id="container">
+			<div id="board">
+				<canvas width=2000 height=1200 id="canvas"></canvas>
+				<div id="magnets"></div>
+				<svg id="svg" width=2500 height=1300></svg>
+				<div id="cursors"></div>
+				<div id="palette" class="PaletteHide"></div>
+			</div>
 		</div>
 	</div>
 
 	<div class="pageNumberHidden" id="pageNumber">1</div>
-	<div id="help" class="MenuPanel">
+	<div id="welcome" hidden class="MenuPanel">
+		<div class="divMenuHide"><button onclick="welcome.hidden = true">X</button>Esc.</div>
+
+
 		<h1>Welcome to Tableaunoir</h1>
 
 		<div class="explanation">
-			Tableaunoir is the greatest (!) <em>online blackboard</em>.
-			Of course, you can <em>draw</em> in different <em>colors</em> and <em>erase</em>, but
-			you can also create <em>magnets</em> (think of them as fridge magnets) for making <em>interactive
+			<img src="img/welcome_tableaunoir.png" />
+			This <em>online blackboard</em> is ideally used with a <em>graphics
+				tablet</em>. Your audience is <em>concentrated
+				on the content</em> if you hide the toolbar and use keyboard shortcuts.
+
+		</div>
+
+		<div class="explanation">
+			<img src="img/welcome_magnets.png" />
+			You may create <em>magnets</em> (think of them as fridge magnets) for making
+			<em>interactive
 				courses</em>,
-			presentations and discussions with students. Ideally, you use it with a <em>graphics tablet</em>.
-			If it does not work, please update your browser. Work
+			presentations and discussions with students.</em></div>
+
+		<div class="explanation">
+			<img src="img/shareInEverybodyWritesMode.png" />
+			Blackboards are sharable in order to <em>collaborate</em> with your friends (feature still in development).
+			Open the menu!
+		</div>
+		<div class="explanation">
+			<img src="img/welcome_open.png" />
+			Work
 			best on
 			Firefox, Chrome or Chromium, last versions.
-			<br /><br />
-			The project is <em>open source</em> and the source code is available at:
+
+
+			The project is <em>open source</em>. See:
 			<a target="_blank" rel="noopener noreferrer"
-				href="https://github.com/tableaunoir">https://github.com/tableaunoir</a>
+				href="https://github.com/tableaunoir/tableaunoir.github.io">https://github.com/tableaunoir/tableaunoir.github.io</a>
 		</div>
-		<br />
-		<div class="center">
-			<div class="modePanel">
-				<div class="center">
-					<button id="start"><img src="img/nobutton.png" /><br />Start <br />button-free mode</button>
-				</div>
-				For your audience being <em>concentrated on the content</em>, no button is shown.
-				<table>
-					<tr>
-						<th>Keyboard shortcuts</th>
-						<th></th>
-					</tr>
-					<tr>
-						<td><span class="keyboardkey">Esc.</span> or <span class="keyboardkey">F1</span></td>
-						<td>show/hide the menu that gives all the <em>keyboard shortcuts</em>.</td>
-					</tr>
-					<tr>
-						<td><span class="keyboardkey">e</span></td>
-						<td>switch between chalk and eraser</td>
-					</tr>
-					<tr>
-						<td><span class="keyboardkey">c</span></td>
-						<td>change the color of the chalk or of the selected magnet</td>
-					</tr>
-				</table>
 
 
 
-			</div>
-			<div class="modePanel">
-				<div class="center">
-					<button id="startButtonMode"><img src="img/showbuttons.png" /><br />Start <br /> button
-						mode</button>
-				</div>
-				This mode offers few <em>buttons</em> for changing the colors, for erasing and for showing the menu.
-			</div>
-		</div>
 	</div>
 
 
 	<div id="menu" class="menuHide MenuPanel">
 		<div class="tabs">
-			<button class="tablink" id="defaultOpen" onclick="Menu.openPage('MyBlackboard', this)">My Board</button>
-			<button class="tablink" onclick="Menu.openPage('Share', this)">Share</button>
-			<button class="tablink" onclick="Menu.openPage('Magnets', this)">Magnets</button>
-			<button class="tablink" onclick="Menu.openPage('KeyboardShortcuts', this)" id="defaultOpen">Keyboard
+			<button class="tablink" id="defaultOpen" onclick="Menu.openPage('MyBlackboard', this)">⎕ My Board</button>
+			<button class="tablink" onclick="Menu.openPage('Share', this)">🔗 Share</button>
+			<button class="tablink" onclick="Menu.openPage('Magnets', this)">🎊 Magnets</button>
+
+			<button class="tablink" onclick="Menu.openPage('Options', this)">⚛ Options</button>
+
+			<button class="tablink" onclick="Menu.openPage('KeyboardShortcuts', this)" id="defaultOpen">⌨ Keyboard
 				Shortcuts</button>
-			<button class="tablink" onclick="Menu.openPage('Options', this)">Options</button>
+			<button class="tablink" onclick="Menu.openPage('Help', this)" id="defaultOpen">? Help</button>
+
 			<button class="tablink" onclick="Menu.openPage('About', this)" id="defaultOpen">About tableaunoir</button>
-			<button class="tablink" onclick="Menu.openPage('Help', this)" id="defaultOpen">Help</button>
 		</div>
 		<div>
 			<div id="menucontent"></div>
 			<div id="About" class="tabcontent">
-				Tableaunoir is the greatest (!) <em>online blackboard</em>.
-				Of course, you can <em>draw</em> in different <em>colors</em> and <em>erase</em>, but
-				you can also create <em>magnets</em> (think of them as fridge magnets) for making <em>interactive
-					courses</em>,
-				presentations and discussions with students. Ideally, you use it with a <em>graphics tablet</em>.
-				If it does not work, please update your browser. Work
-				best on
-				Firefox, Chrome or Chromium, last versions.
-				<br /><br />
-				The project is <em>open source</em> and the source code is available at:
-				<a target="_blank" rel="noopener noreferrer"
-					href="https://github.com/tableaunoir">https://github.com/tableaunoir</a>
+				<h2>About Tableaunoir</h2>
+				<div class="explanation">
+					<img src="img/welcome_tableaunoir.png" />
+					Tableaunoir is an <em>online blackboard</em>. It is ideally used with a <em>graphics
+						tablet</em>. Your audience is <em>concentrated
+						on the content</em> if you hide the toolbar and use keyboard shortcuts.
 
-				<br /><br />
+				</div>
+
+				<div class="explanation">
+					<img src="img/welcome_magnets.png" />
+					You may create <em>magnets</em> (think of them as fridge magnets) for making
+					<em>interactive
+						courses</em>,
+					presentations and discussions with students.</em></div>
+
+				<div class="explanation">
+					<img src="img/shareInEverybodyWritesMode.png" />
+					Blackboards are sharable in order to <em>collaborate</em> with your friends (feature still in
+					development). Open the menu!
+				</div>
+				<div class="explanation">
+					<img src="img/welcome_open.png" />
+					Work
+					best on
+					Firefox, Chrome or Chromium, last versions.
+
+
+					The project is <em>open source</em>. See:
+					<a target="_blank" rel="noopener noreferrer"
+						href="https://github.com/tableaunoir/tableaunoir.github.io">https://github.com/tableaunoir/tableaunoir.github.io</a>
+				</div>
+
+				<h2>Videos</h2>
 				<a target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/watch?v=P6_lhqiPBow">Video of
 					that presents tableaunoir (in french)</a>
 			</div>
@@ -141,9 +167,18 @@
 					<button class="buttonClear" id="clearMagnet">
 						<img src="img/magnet_delete.png" /><br />Remove all the magnets</button>
 				</div>
+				<h2>Add a background</h2>
+				<button id="buttonNoBackground">
+					<img src="img/nobackground.png" /><br />No background</button>
+				<button class="buttonMusicScore" id="buttonMusicScore">
+					<img src="img/backgroundmusicscore.png" /><br />Music score</button>
 				<h2>Load</h2>
 				<div class="menuDiv">
-					To import an existing board, drag and drop your <em>.tableaunoir file</em> in the application.
+					<label for="file">
+						To open an existing board, drag and drop your <em>.tableaunoir file</em> in the application or
+						choose a file:</label>
+					</br>
+					<input type="file" id="file" name="file" accept="image/png, image/jpeg, .tableaunoir" />
 				</div>
 				<h2>Save</h2>
 
@@ -158,7 +193,11 @@
 				<button id="whiteBoardSwitch"><img src="img/switchblackwhite.png" /><br />Switch to
 					whiteboard</button>
 				<button id="controlsToggle" onclick="controls.hidden = !controls.hidden; Menu.hide()">
-					<img src="img/showbuttons.png" /><br />Show/hide control buttons</button>
+					<img src="img/showbuttons.png" /><br />Show/hide toolbar</button>
+				<h2>Cursor</h2>
+				<button id="buttonLefthanded">Left-handed</button>
+				<button id="buttonRighthanded">Right-handed</button>
+
 			</div>
 
 			<div id="KeyboardShortcuts" class="tabcontent">
@@ -240,7 +279,7 @@
 						</tr>
 						<tr>
 							<td><span class="keyboardkey">Ctrl + +</span></td>
-							<td><em>augment</em> the size of the text</td>
+							<td><em>increase</em> the size of the text</td>
 						</tr>
 						<tr>
 							<td><span class="keyboardkey">Ctrl + -</span></td>
@@ -252,10 +291,13 @@
 			</div>
 			<div id="Share" class="tabcontent">
 				<div class="warning" id="ShareGithub">Warning: Share boards does not work since tableaunoir.github.io is
-					a showcase. You have to install tableaunoir on your own server, or you may try <a href="http://tableaunoir.irisa.fr">http://tableaunoir.irisa.fr</a> if it works!</div>
-				<div class="warning">Warning: this functionnality is still under development and may not work perfectly. In particular, magnets are not shared yet.
+					a showcase. You have to install tableaunoir on your own server, or you may try <a
+						href="http://tableaunoir.irisa.fr">http://tableaunoir.irisa.fr</a> if it works!</div>
+				<div class="warning">Warning: this functionnality is still under development and may not work perfectly.
+					In particular, magnets are not shared yet.
 				</div>
-
+				<div class="warning">Warning: The server will not save your board.
+				</div>
 
 				<div id="shareAndJoin">
 					<h2>Make a shared board</h2>
@@ -273,9 +315,18 @@
 				</div>
 
 				<div hidden id="shareInfo">
+					<h2>Share with others</h2>
 					In order to <em>share</em> the board with your friends, give them the following URL:<br />
 					<input id="shareUrl" value=""></input>
-					<h2>Connected Users</h2>
+
+					<div hidden id="shareMode">
+						<h2>Share mode</h2>
+						<button id="shareInTeacherMode"><img src="img/shareInTeacherMode.png" /><br />You write and the
+							other users only see</button>
+						<button id="shareInEverybodyWritesMode"><img
+								src="img/shareInEverybodyWritesMode.png" /><br />All users can write</button>
+					</div>
+
 					<div id="users"></div>
 
 				</div>
@@ -317,6 +368,8 @@
 					<button class="magnetCollectionButton" id="magnetUnionFind">Union-find</button>
 					<h3>Complexity theory</h3>
 					<button class="magnetCollectionButton" id="magnetTilings">Tilings</button>
+					<h3>Games</h3>
+					<button class="magnetCollectionButton" id="magnetGo">Go</button>
 				</div>
 
 			</div>

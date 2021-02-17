@@ -53,6 +53,8 @@ class MagnetManager {
 		while (magnets.length > 0)
 			magnets[0].remove();
 
+		Share.sendMagnets();
+
 		Menu.hide();
 	}
 
@@ -61,23 +63,35 @@ class MagnetManager {
 	 * @param {*} element 
 	 * @description add the DOM element element to the list of magnets
 	 */
-	static addMagnet(element) {
+	static addMagnet(element, callback = () => {}) {
 		if (MagnetManager.magnetX > BoardManager.getCurrentScreenRectangle().x2 - 10) {
 			MagnetManager.magnetX = BoardManager.getCurrentScreenRectangle().x1;
 			MagnetManager.magnetY += 64;
 		}
 
+		element.id = "m" + Math.random(); //generate randomly an id
 		element.style.left = MagnetManager.magnetX + "px";
 		element.style.top = MagnetManager.magnetY + "px";
-
-		//done with setTimeout because images may be loaded
-		setTimeout(() => element.style.zIndex = window.innerWidth - element.clientWidth, 400);
 
 		MagnetManager.magnetX += 64;
 		MagnetManager.currentMagnet = element;
 		element.classList.add("magnet");
-
 		document.getElementById("magnets").appendChild(element);
+
+		let f = () => {
+			if (Share.isShared())
+				Share.sendNewMagnet(element);
+			callback(element);
+		}
+
+		
+		if (element.tagName == "IMG") {
+			element.addEventListener("load", f);
+		}
+		else {
+			f();
+		}
+
 		MagnetManager._installMagnet(element);
 	}
 
@@ -120,8 +134,8 @@ class MagnetManager {
 				let count = 0;
 				const margin = 32;
 				do {
-					x = rect.x1 + (Math.random() * window.innerWidth);
-					y = rect.y1 + (Math.random() * 3 * window.innerHeight / 4);
+					x = rect.x1 + (Math.random() * Layout.getWindowWidth());
+					y = rect.y1 + (Math.random() * 3 * Layout.getWindowHeight() / 4);
 
 					x = Math.max(x, rect.x1 + margin);
 					y = Math.max(y, rect.y1 + margin);
@@ -214,6 +228,7 @@ class MagnetManager {
 	}
 
 
+
 	static installMagnets() {
 		let magnets = MagnetManager.getMagnets();
 
@@ -225,6 +240,17 @@ class MagnetManager {
 	static _installMagnet(element) {
 		makeDraggableElement(element);
 
+		
+
+		let f = () => {const LARGENUMBER = 10000; element.style.zIndex = LARGENUMBER - element.clientWidth;};
+		if (element.tagName == "IMG") {
+			element.addEventListener("load", f);
+		}
+		else {
+			f();
+		}
+
+		
 
 		element.onmouseenter = () => { MagnetManager.magnetUnderCursor = element };
 		element.onmouseleave = () => { MagnetManager.magnetUnderCursor = undefined };
@@ -242,6 +268,7 @@ class MagnetManager {
 
 			function dragMouseDown(e) {
 				drag = true;
+				MagnetManager.currentMagnet = e.target;
 				/**
 				 * 
 				 * @param {*} el 
@@ -258,8 +285,9 @@ class MagnetManager {
 				e = e || window.event;
 				e.preventDefault(); //to avoid the drag/drop by the browser
 				// get the mouse cursor position at startup:
-				pos3 = e.clientX;
-				pos4 = e.clientY;
+
+				pos3 = e.clientX * Layout.getZoom();
+				pos4 = e.clientY * Layout.getZoom();
 				document.onpointerup = closeDragElement;
 				document.onmouseup = closeDragElement;
 				// call a function whenever the cursor moves:
@@ -290,20 +318,18 @@ class MagnetManager {
 				e = e || window.event;
 				e.preventDefault();
 				// calculate the new cursor position:
-				pos1 = pos3 - e.clientX;
-				pos2 = pos4 - e.clientY;
-				pos3 = e.clientX;
-				pos4 = e.clientY;
+				pos1 = pos3 - e.clientX * Layout.getZoom();
+				pos2 = pos4 - e.clientY * Layout.getZoom();
+				pos3 = e.clientX * Layout.getZoom();
+				pos4 = e.clientY * Layout.getZoom();
 
 
 
 				// set the element's new position:
-				element.style.top = (element.offsetTop - pos2) + "px";
-				element.style.left = (element.offsetLeft - pos1) + "px";
+				Share.execute("magnetMove", [element.id, element.offsetLeft - pos1, element.offsetTop - pos2]);
 
 				for (let el of otherElementsToMove) {
-					el.style.top = (el.offsetTop - pos2) + "px";
-					el.style.left = (el.offsetLeft - pos1) + "px";
+					Share.execute("magnetMove", [el.id, el.offsetLeft - pos1, el.offsetTop - pos2]);
 				}
 			}
 
@@ -313,7 +339,10 @@ class MagnetManager {
 
 				drag = false;
 				console.log("close drag")
-				e.target.classList.remove("magnetDrag");
+
+				if (e.target.classList != undefined) //it is undefined = dropped outside the screen. TODO: delete the magnets?
+					e.target.classList.remove("magnetDrag");
+
 				canvas.style.cursor = canvasCursorStore;
 
 				// stop moving when mouse button is released:
@@ -326,10 +355,12 @@ class MagnetManager {
 
 
 
-	static addMagnetImage(filename) {
+	static addMagnetImage(filename, callback = () => {}) {
 		let img = new Image();
 		img.src = "magnets/" + filename;
-		MagnetManager.addMagnet(img);
+		img.classList.add("backgroundTransparent");
+		MagnetManager.addMagnet(img, callback);
+		return img;
 	}
 
 
@@ -345,7 +376,7 @@ class MagnetManager {
 		divText.onkeydown = (e) => {
 			let setFontSize = (size) => {
 				divText.style.fontSize = size + "px";
-				for(let o of divText.children) {
+				for (let o of divText.children) {
 					o.style.fontSize = size + "px";
 				}
 			}
@@ -366,7 +397,7 @@ class MagnetManager {
 			}
 			else if (e.ctrlKey && e.key == "-") { // Ctrl + -
 				let size = parseInt(divText.style.fontSize);
-				if(size > 6) size--;
+				if (size > 6) size--;
 				setFontSize(size);
 				e.preventDefault();
 			}
@@ -388,7 +419,18 @@ class MagnetManager {
 
 
 	static removeCurrentMagnet() {
-		MagnetManager.currentMagnet.remove();
+		if (MagnetManager.currentMagnet == undefined)
+			return;
+		Share.execute("magnetRemove", [MagnetManager.currentMagnet.id]);
+	}
+
+	/**
+	 * 
+	 * @param {*} id 
+	 * @description remove the magnet of id
+	 */
+	static magnetRemove(id) {
+		document.getElementById(id).remove();
 		MagnetManager.currentMagnet == undefined;
 		MagnetManager.magnetUnderCursor = undefined;
 	}

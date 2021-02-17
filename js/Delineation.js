@@ -1,3 +1,6 @@
+/**
+ * This class represents a polyline drawn by a user
+ */
 class Delineation {
 
     points = [];
@@ -37,7 +40,7 @@ class Delineation {
     }
 
     removePolygon() {
-        if(document.getElementById("magnetCreationPolygon"))
+        if (document.getElementById("magnetCreationPolygon"))
             svg.removeChild(document.getElementById("magnetCreationPolygon"));
     }
 
@@ -56,7 +59,7 @@ class Delineation {
                     this.lastpoints = [];
                     this.cutAndMagnetize();
                 }
-            }, 2000);
+            }, 1000);
         }
         else
             this.removePolygon();
@@ -71,7 +74,7 @@ class Delineation {
             return false;
 
         for (let point of this.points)
-            if (Math.abs(point.x - this.points[0].x) > 1 && Math.abs(point.y - this.points[0].y) > 1)
+            if (Math.abs(point.x - this.points[0].x) > 2 && Math.abs(point.y - this.points[0].y) > 2)
                 return false;
 
         return true;
@@ -105,18 +108,6 @@ class Delineation {
     dotInPreviousPolygon() {
         return Delineation.inPolygon(this.points[0], this.lastpoints);
     }
-    /**
-     * @description magnetize the "selected" part of the blackboard.
-     */
-    copyAndMagnetize() {
-        if (!this.isSuitable())
-            return;
-
-        this._removeContour();
-        this._createMagnetFromImg();
-        BoardManager.save();
-    }
-
 
     erase() {
         if (!this.isSuitable())
@@ -141,6 +132,22 @@ class Delineation {
         BoardManager.save();
     }
 
+
+    /**
+    * @description magnetize the "selected" part of the blackboard.
+    */
+    copyAndMagnetize() {
+        if (!this.isSuitable())
+            return;
+
+        this._removeContour();
+        this._createMagnetFromImg();
+        BoardManager.save();
+    }
+
+
+
+
     isSuitable() {
         for (let point of this.points) {
             if (Math.abs(point.x - this.points[0].x) > 16 &&
@@ -156,7 +163,7 @@ class Delineation {
         context.strokeStyle = "rgba(255, 255, 255, 1)";
         context.lineWidth = 6;
         context.globalAlpha = 1.0;
-        
+
 
         context.moveTo(this.points[0].x, this.points[0].y);
         for (let point of this.points) {
@@ -185,8 +192,8 @@ class Delineation {
         let img = new Image();
         const rectangle = this._getRectangle();
         console.log(rectangle)
-        BoardManager._toBlobOfRectangle(rectangle, (blob) => img.src = URL.createObjectURL(blob));
-        //img.src = BoardManager._getDataURLPictureOfRectangle(rectangle);
+        //BoardManager._toBlobOfRectangle(rectangle, (blob) => img.src = URL.createObjectURL(blob));
+        img.src = BoardManager.getDataURLOfRectangle(rectangle);
         img.style.clipPath = "polygon(" + this.points.map(point => `${point.x - rectangle.x1}px ${point.y - rectangle.y1}px`).join(", ") + ")";
         MagnetManager.addMagnet(img);
         img.style.left = rectangle.x1 + "px";
@@ -202,7 +209,7 @@ class Delineation {
             context.lineTo(point.x, point.y);
         }
         context.clip();
-        context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        context.clearRect(0, 0, Layout.getWindowWidth(), Layout.getWindowHeight());
         context.restore();
         context.globalCompositeOperation = "source-over";
         this.reset();

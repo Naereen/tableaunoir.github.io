@@ -16,11 +16,14 @@ class BoardManager {
    */
     static init() {
         document.getElementById("blackboardClear").onclick = () => {
-            BoardManager._clear();
-            BoardManager.save();
-            Menu.hide();
+           Share.execute("boardClear", []);
         }
 
+    }
+
+
+    static getBackgroundColor() {
+        return document.getElementById("canvasBackground").style.backgroundColor;
     }
 
     /**
@@ -32,23 +35,14 @@ class BoardManager {
     }
 
 
-    /**
- * resize the board to the size of the window
- */
-    static resize() {
-        if (document.getElementById("canvas").width < window.innerWidth)
-            document.getElementById("canvas").width = window.innerWidth;
 
-        if (document.getElementById("canvas").height < window.innerHeight)
-            document.getElementById("canvas").height = window.innerHeight;
-    }
 
 
     static getDefaultChalkColor() {
-        return (document.getElementById("canvas").style.backgroundColor == "black") ? "white" : "black";
+        return (document.getElementById("canvasBackground").style.backgroundColor == "black") ? "white" : "black";
     }
 
-    
+
     static _createCanvasForRectangle(r) {
         let C = document.createElement("canvas");
         C.width = r.x2 - r.x1;
@@ -64,26 +58,42 @@ class BoardManager {
     /**
      * 
      * @param {*} r a rectangle {x1, y1, x2, y2}
-     * @returns the content as a string of the image
+     * @description call the callback when the blob of the rectangle is created
      */
     static _toBlobOfRectangle(r, callback) {
-        return BoardManager._createCanvasForRectangle(r).toBlob(callback);
+        BoardManager._createCanvasForRectangle(r).toBlob(callback);
     }
 
 
+
+       /**
+     * 
+     * @param {*} r a rectangle {x1, y1, x2, y2}
+     * @returns the content as a string of the image
+     */
+    static getDataURLOfRectangle(r) {
+        return BoardManager._createCanvasForRectangle(r).toDataURL();
+    }
+
+
+
+    static isCancelRedoActivated() {
+        return !Share.isShared();//(!Share.isShared() && !Layout.isTactileDevice());
+    }
 
     /**
      * save the current board into the cancel/redo stack but also in the localStorage of the browser
      */
     static save(rectangle) {
         // if (rectangle == undefined) {
-        document.getElementById("canvas").toBlob((blob) => {
-            console.log("save that blob: " + blob)
-            localStorage.setItem(BoardManager.boardName, blob);
-            BoardManager.cancelStack.push(blob);
-            Share.sendFullCanvas(blob);
-        }
-        );
+        if (BoardManager.isCancelRedoActivated())
+            document.getElementById("canvas").toBlob((blob) => {
+                console.log("save that blob: " + blob)
+                //  localStorage.setItem(Share.getTableauNoirID(), canvas.toDataURL());
+                BoardManager.cancelStack.push(blob);
+                //Share.sendFullCanvas(blob);
+            }
+            );
         /*}
           else {
               BoardManager._toBlobOfRectangle(rectangle, (blob) => {
@@ -108,8 +118,8 @@ class BoardManager {
     static getCurrentScreenRectangle() {
         const x1 = container.scrollLeft;
         const y1 = container.scrollTop;
-        const x2 = x1 + window.innerWidth;
-        const y2 = y1 + window.innerHeight;
+        const x2 = x1 + Layout.getWindowWidth();
+        const y2 = y1 + Layout.getWindowHeight();
         return { x1: x1, y1: y1, x2: x2, y2: y2 };
     }
 
@@ -120,20 +130,26 @@ class BoardManager {
     /**
      * load the board from the local storage
      */
-    static load(data = localStorage.getItem(BoardManager.boardName)) {
+    static load(data = localStorage.getItem(Share.getTableauNoirID())) {
         // let data = localStorage.getItem(BoardManager.boardName);
 
         if (data != undefined) {
             BoardManager._clear();
-            let image = new Image();
-            image.src = data;
-            image.onload = function () {
-                document.getElementById("canvas").width = image.width;
-                document.getElementById("canvas").height = image.height;
-                document.getElementById("canvas").getContext("2d").drawImage(image, 0, 0);
-                BoardManager.save();
-                console.log("loaded!")
+            try {
+                let image = new Image();
+                image.src = data;
+                image.onload = function () {
+                    document.getElementById("canvas").width = image.width;
+                    document.getElementById("canvas").height = image.height;
+                    document.getElementById("canvas").getContext("2d").drawImage(image, 0, 0);
+                    BoardManager.save();
+                    console.log("loaded!")
+                }
             }
+            catch (e) {
+
+            }
+
         }
         else {
             BoardManager._clear();
@@ -172,7 +188,7 @@ class BoardManager {
      * @returns the number of pixels when scrolling
      */
     static scrollQuantity() {
-        return window.innerWidth / 2;
+        return Layout.getWindowWidth() / 2;
     }
 
     /**
@@ -196,15 +212,15 @@ class BoardManager {
     static right() {
         const MAXCANVASWIDTH = 20000;
 
-        if (container.scrollLeft >= MAXCANVASWIDTH - window.innerWidth) {
-            container.scrollLeft = MAXCANVASWIDTH - window.innerWidth;
+        if (container.scrollLeft >= MAXCANVASWIDTH - Layout.getWindowWidth()) {
+            container.scrollLeft = MAXCANVASWIDTH - Layout.getWindowWidth();
             return;
         }
 
-        if ((container.scrollLeft >= canvas.width - window.innerWidth - BoardManager.scrollQuantity()) && BoardManager._rightExtendCanvasEnable) {
+        if ((container.scrollLeft >= canvas.width - Layout.getWindowWidth() - BoardManager.scrollQuantity()) && BoardManager._rightExtendCanvasEnable) {
             let image = new Image();
             image.src = canvas.toDataURL();
-            console.log("extension: canvas width " + canvas.width + " to " + (container.scrollLeft + window.innerWidth))
+            console.log("extension: canvas width " + canvas.width + " to " + (container.scrollLeft + Layout.getWindowWidth()))
             canvas.width = ((canvas.width / BoardManager.scrollQuantity()) + 1) * BoardManager.scrollQuantity();
             const context = document.getElementById("canvas").getContext("2d");
             context.globalCompositeOperation = "source-over";
@@ -213,7 +229,7 @@ class BoardManager {
                 context.drawImage(image, 0, 0);
             }
             BoardManager._rightExtendCanvasEnable = false;
-            setTimeout(() => { BoardManager._rightExtendCanvasEnable = true }, 1000);
+            setTimeout(() => { BoardManager._rightExtendCanvasEnable = true }, 1000);//prevent to extend the canvas too many times
         }
         const x = container.scrollLeft + BoardManager.scrollQuantity();
         container.scrollTo({ top: 0, left: x, behavior: 'smooth' });
@@ -269,7 +285,8 @@ class BoardManager {
      * 
      */
     static cancel() {
-        BoardManager._loadCurrentCancellationStackData(BoardManager.cancelStack.back());
+        if (BoardManager.isCancelRedoActivated())
+            BoardManager._loadCurrentCancellationStackData(BoardManager.cancelStack.back());
     }
 
 
@@ -278,6 +295,7 @@ class BoardManager {
      * 
      */
     static redo() {
-        BoardManager._loadCurrentCancellationStackData(BoardManager.cancelStack.forward());
+        if (BoardManager.isCancelRedoActivated())
+            BoardManager._loadCurrentCancellationStackData(BoardManager.cancelStack.forward());
     }
 }
